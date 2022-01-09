@@ -1,5 +1,8 @@
 from pygame import *
+from os import path
 import random
+
+images = path.join(path.dirname(__file__), 'image')
 
 WIDTH = 478
 HEIGHT = 600
@@ -10,13 +13,22 @@ screen = display.set_mode((WIDTH, HEIGHT))
 display.set_caption('Fly High')
 clock = time.Clock()
 
+font_name = font.match_font('britannic bold')
+
+def draw_text(surf, text, size, x, y):
+    font1 = font.Font(font_name, size)
+    text_surface = font1.render(text, True, (255, 255, 255))
+    text_rect = text_surface.get_rect()
+    text_rect.midtop = (x, y)
+    surf.blit(text_surface, text_rect)
 
 class Player(sprite.Sprite):
     def __init__(self):
         sprite.Sprite.__init__(self)
-        self.image = Surface((50, 40))
-        self.image.fill((200, 0, 0))
+        self.image = transform.scale(player_img1, (90, 78))
+        self.image.set_colorkey((0, 0, 0))
         self.rect = self.image.get_rect()
+        self.radius = 20
         self.rect.centerx = WIDTH / 2
         self.rect.bottom = HEIGHT - 10
         self.speedx = 0
@@ -43,15 +55,21 @@ class Player(sprite.Sprite):
 class Mob(sprite.Sprite):
     def __init__(self):
         sprite.Sprite.__init__(self)
-        self.image = Surface((30, 40))
-        self.image.fill((0, 100, 0))
+        self.image_orig = random.choice(meteor_images)
+        self.image_orig.set_colorkey((0, 0, 0))
+        self.image = self.image_orig.copy()
         self.rect = self.image.get_rect()
+        self.radius = int(self.rect.width * .85 / 2)
         self.rect.x = random.randrange(WIDTH - self.rect.width)
         self.rect.y = random.randrange(-100, -40)
         self.speedy = random.randrange(1, 8)
         self.speedx = random.randrange(-3, 3)
+        self.rotation = 0
+        self.rotation_speed = random.randrange(-8, 8)
+        self.last_update = time.get_ticks()
 
     def update(self):
+        self.rotate()
         self.rect.x += self.speedx
         self.rect.y += self.speedy
         if self.rect.top > HEIGHT + 10 or self.rect.left < -25 or self.rect.right > WIDTH + 20:
@@ -59,12 +77,24 @@ class Mob(sprite.Sprite):
             self.rect.y = random.randrange(-100, -40)
             self.speedy = random.randrange(1, 8)
 
+    def rotate(self):
+        now = time.get_ticks()
+        if now - self.last_update > 50:
+            self.last_update = now
+            self.rotation = (self.rotation + self.rotation_speed) % 360
+            new_image = transform.rotate(self.image_orig, self.rotation)
+            old_center = self.rect.center
+            self.image = new_image
+            self.rect = self.image.get_rect()
+            self.rect.center = old_center
+
 
 class Bullet(sprite.Sprite):
     def __init__(self, x, y):
         sprite.Sprite.__init__(self)
-        self.image = Surface((10, 20))
-        self.image.fill((100, 100, 100))
+        sprite.Sprite.__init__(self)
+        self.image = bullet_img1
+        self.image.set_colorkey((0, 0, 0))
         self.rect = self.image.get_rect()
         self.rect.bottom = y
         self.rect.centerx = x
@@ -76,6 +106,14 @@ class Bullet(sprite.Sprite):
             self.kill()
 
 
+player_img1 = image.load(path.join(images, 'Player3.jpg')).convert()
+bullet_img1 = image.load(path.join(images, 'laser1.png')).convert()
+meteor_images = []
+meteor_list = ['asteroid1.png', 'asteroid2.png', 'asteroid3.png', 'asteroid4.png', 'asteroid5.png']
+for img in meteor_list:
+    meteor_images.append(image.load(path.join(images, img)).convert())
+
+
 all_sprites = sprite.Group()
 bullets = sprite.Group()
 mobs = sprite.Group()
@@ -85,6 +123,7 @@ for i in range(10):
     m = Mob()
     all_sprites.add(m)
     mobs.add(m)
+score = 0
 
 running = True
 while running:
@@ -99,15 +138,17 @@ while running:
     all_sprites.update()
     hits = sprite.groupcollide(mobs, bullets, True, True)
     for hit in hits:
+        score += 70 - hit.radius
         m = Mob()
         all_sprites.add(m)
         mobs.add(m)
-    hits = sprite.spritecollide(player, mobs, False)
+    hits = sprite.spritecollide(player, mobs, False, sprite.collide_circle)
     if hits:
         running = False
     bg = image.load("image/фон1.jpg")
     screen.blit(bg, (-3, 0))
     all_sprites.draw(screen)
+    draw_text(screen, 'Score:' + ' ' + str(score), 40, 80, 10)
     display.flip()
 
 quit()
