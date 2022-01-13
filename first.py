@@ -22,6 +22,23 @@ def draw_text(surf, text, size, x, y):
     text_rect.midtop = (x, y)
     surf.blit(text_surface, text_rect)
 
+def newmob():
+    m = Mob()
+    all_sprites.add(m)
+    mobs.add(m)
+
+
+def draw_shield_bar(surf, x, y, pct):
+    if pct < 0:
+        pct = 0
+    BAR_LENGTH = 150
+    BAR_HEIGHT = 30
+    fill = (pct / 100) * BAR_LENGTH
+    outline_rect = Rect(x, y, BAR_LENGTH, BAR_HEIGHT)
+    fill_rect = Rect(x, y, fill, BAR_HEIGHT)
+    draw.rect(surf, (0, 255, 0), fill_rect)
+    draw.rect(surf, (0, 0, 0), outline_rect, 2)
+
 class Player(sprite.Sprite):
     def __init__(self):
         sprite.Sprite.__init__(self)
@@ -32,6 +49,7 @@ class Player(sprite.Sprite):
         self.rect.centerx = WIDTH / 2
         self.rect.bottom = HEIGHT - 10
         self.speedx = 0
+        self.health = 100
 
     def update(self):
         self.speedx = 0
@@ -120,9 +138,7 @@ mobs = sprite.Group()
 player = Player()
 all_sprites.add(player)
 for i in range(10):
-    m = Mob()
-    all_sprites.add(m)
-    mobs.add(m)
+    newmob()
 score = 0
 
 running = True
@@ -138,17 +154,20 @@ while running:
     all_sprites.update()
     hits = sprite.groupcollide(mobs, bullets, True, True)
     for hit in hits:
-        score += 70 - hit.radius
-        m = Mob()
-        all_sprites.add(m)
-        mobs.add(m)
-    hits = sprite.spritecollide(player, mobs, False, sprite.collide_circle)
-    if hits:
-        running = False
+        score += 50 - hit.radius
+        newmob()
+
+    hits = sprite.spritecollide(player, mobs, True, sprite.collide_circle)
+    for hit in hits:
+        player.health -= hit.radius * 2
+        newmob()
+        if player.health <= 0:
+            running = False
     bg = image.load("image/фон1.jpg")
     screen.blit(bg, (-3, 0))
     all_sprites.draw(screen)
     draw_text(screen, 'Score:' + ' ' + str(score), 40, 80, 10)
+    draw_shield_bar(screen, 320, 5, player.health)
     display.flip()
 
 quit()
