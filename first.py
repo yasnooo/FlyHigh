@@ -15,12 +15,14 @@ clock = time.Clock()
 
 font_name = font.match_font('britannic bold')
 
+
 def draw_text(surf, text, size, x, y):
     font1 = font.Font(font_name, size)
     text_surface = font1.render(text, True, (255, 255, 255))
     text_rect = text_surface.get_rect()
     text_rect.midtop = (x, y)
     surf.blit(text_surface, text_rect)
+
 
 def newmob():
     m = Mob()
@@ -39,6 +41,7 @@ def draw_shield_bar(surf, x, y, pct):
     draw.rect(surf, (0, 255, 0), fill_rect)
     draw.rect(surf, (0, 0, 0), outline_rect, 2)
 
+
 class Player(sprite.Sprite):
     def __init__(self):
         sprite.Sprite.__init__(self)
@@ -50,6 +53,8 @@ class Player(sprite.Sprite):
         self.rect.bottom = HEIGHT - 10
         self.speedx = 0
         self.health = 100
+        self.shoot_delay = 250
+        self.last_shot = time.get_ticks()
 
     def update(self):
         self.speedx = 0
@@ -58,6 +63,8 @@ class Player(sprite.Sprite):
             self.speedx = -8
         if keystate[K_RIGHT]:
             self.speedx = 8
+        if keystate[K_SPACE]:
+            self.shoot()
         self.rect.x += self.speedx
         if self.rect.right > WIDTH:
             self.rect.right = WIDTH
@@ -65,9 +72,13 @@ class Player(sprite.Sprite):
             self.rect.left = 0
 
     def shoot(self):
-        bullet = Bullet(self.rect.centerx, self.rect.top)
-        all_sprites.add(bullet)
-        bullets.add(bullet)
+        now = time.get_ticks()
+
+        if now - self.last_shot > self.shoot_delay:
+            self.last_shot = now
+            bullet = Bullet(self.rect.centerx, self.rect.top)
+            all_sprites.add(bullet)
+            bullets.add(bullet)
 
 
 class Mob(sprite.Sprite):
@@ -124,6 +135,31 @@ class Bullet(sprite.Sprite):
             self.kill()
 
 
+class Explosion(sprite.Sprite):
+    def __init__(self, center, size):
+        sprite.Sprite.__init__(self)
+        self.size = size
+        self.image = explosion_anim[self.size][0]
+        self.rect = self.image.get_rect()
+        self.rect.center = center
+        self.frame = 0
+        self.last_update = time.get_ticks()
+        self.frame_rate = 50
+
+    def update(self):
+        now = time.get_ticks()
+        if now - self.last_update > self.frame_rate:
+            self.last_update = now
+            self.frame += 1
+            if self.frame == len(explosion_anim[self.size]):
+                self.kill()
+            else:
+                center = self.rect.center
+                self.image = explosion_anim[self.size][self.frame]
+                self.rect = self.image.get_rect()
+                self.rect.center = center
+
+
 player_img1 = image.load(path.join(images, 'Player3.jpg')).convert()
 bullet_img1 = image.load(path.join(images, 'laser1.png')).convert()
 meteor_images = []
@@ -131,6 +167,18 @@ meteor_list = ['asteroid1.png', 'asteroid2.png', 'asteroid3.png', 'asteroid4.png
 for img in meteor_list:
     meteor_images.append(image.load(path.join(images, img)).convert())
 
+explosion_anim = {}
+explosion_anim['lg'] = []
+explosion_anim['sm'] = []
+
+for i in range(9):
+    filename = 'regularExplosion0{}.png'.format(i)
+    img = image.load(path.join(images, filename)).convert()
+    img.set_colorkey((0, 0, 0))
+    img_lg = transform.scale(img, (75, 75))
+    explosion_anim['lg'].append(img_lg)
+    img_sm = transform.scale(img, (32, 32))
+    explosion_anim['sm'].append(img_sm)
 
 all_sprites = sprite.Group()
 bullets = sprite.Group()
@@ -152,17 +200,24 @@ while running:
                 player.shoot()
 
     all_sprites.update()
+
     hits = sprite.groupcollide(mobs, bullets, True, True)
     for hit in hits:
         score += 50 - hit.radius
+        ex = Explosion(hit.rect.center, 'lg')
+        all_sprites.add(ex)
         newmob()
 
     hits = sprite.spritecollide(player, mobs, True, sprite.collide_circle)
     for hit in hits:
         player.health -= hit.radius * 2
+        ex = Explosion(hit.rect.center, 'sm')
+        all_sprites.add(ex)
         newmob()
+
         if player.health <= 0:
             running = False
+
     bg = image.load("image/фон1.jpg")
     screen.blit(bg, (-3, 0))
     all_sprites.draw(screen)
