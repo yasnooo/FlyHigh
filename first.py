@@ -16,6 +16,13 @@ clock = time.Clock()
 font_name = font.match_font('britannic bold')
 
 
+def draw_lives(surf, x, y, lives, img):
+    for i in range(lives):
+        img_rect = img.get_rect()
+        img_rect.x = x + 45 * i
+        img_rect.y = y
+        surf.blit(img, img_rect)
+
 def draw_text(surf, text, size, x, y):
     font1 = font.Font(font_name, size)
     text_surface = font1.render(text, True, (255, 255, 255))
@@ -55,8 +62,16 @@ class Player(sprite.Sprite):
         self.health = 100
         self.shoot_delay = 250
         self.last_shot = time.get_ticks()
+        self.lives = 3
+        self.hidden = False
+        self.hide_timer = time.get_ticks()
 
     def update(self):
+        if self.hidden and time.get_ticks() - self.hide_timer > 1000:
+            self.hidden = False
+            self.rect.centerx = WIDTH / 2
+            self.rect.bottom = HEIGHT - 10
+
         self.speedx = 0
         keystate = key.get_pressed()
         if keystate[K_LEFT]:
@@ -79,6 +94,11 @@ class Player(sprite.Sprite):
             bullet = Bullet(self.rect.centerx, self.rect.top)
             all_sprites.add(bullet)
             bullets.add(bullet)
+
+    def hide(self):
+        self.hidden = True
+        self.hide_timer = time.get_ticks()
+        self.rect.center = (WIDTH / 2, HEIGHT + 200)
 
 
 class Mob(sprite.Sprite):
@@ -160,8 +180,11 @@ class Explosion(sprite.Sprite):
                 self.rect.center = center
 
 
+# Игровая графика
 player_img1 = image.load(path.join(images, 'Player3.jpg')).convert()
 bullet_img1 = image.load(path.join(images, 'laser1.png')).convert()
+player_mini_img = transform.scale(player_img1, (40, 30))
+player_mini_img.set_colorkey((0, 0, 0))
 meteor_images = []
 meteor_list = ['asteroid1.png', 'asteroid2.png', 'asteroid3.png', 'asteroid4.png', 'asteroid5.png']
 for img in meteor_list:
@@ -170,6 +193,7 @@ for img in meteor_list:
 explosion_anim = {}
 explosion_anim['lg'] = []
 explosion_anim['sm'] = []
+explosion_anim['player'] = []
 
 for i in range(9):
     filename = 'regularExplosion0{}.png'.format(i)
@@ -179,6 +203,10 @@ for i in range(9):
     explosion_anim['lg'].append(img_lg)
     img_sm = transform.scale(img, (32, 32))
     explosion_anim['sm'].append(img_sm)
+    filename = 'sonicExplosion0{}.png'.format(i)
+    img = image.load(path.join(images, filename)).convert()
+    img.set_colorkey((0, 0, 0))
+    explosion_anim['player'].append(img)
 
 all_sprites = sprite.Group()
 bullets = sprite.Group()
@@ -214,15 +242,23 @@ while running:
         ex = Explosion(hit.rect.center, 'sm')
         all_sprites.add(ex)
         newmob()
-
         if player.health <= 0:
-            running = False
+            death_explosion = Explosion(player.rect.center, 'player')
+            all_sprites.add(death_explosion)
+            player.hide()
+            player.lives -= 1
+            player.health = 100
+
+    if player.lives == 0 and not death_explosion.alive():
+        running = False
 
     bg = image.load("image/фон1.jpg")
     screen.blit(bg, (-3, 0))
     all_sprites.draw(screen)
     draw_text(screen, 'Score:' + ' ' + str(score), 40, 80, 10)
     draw_shield_bar(screen, 320, 5, player.health)
+    draw_lives(screen, WIDTH - 140, 50, player.lives,
+               player_mini_img)
     display.flip()
 
 quit()
