@@ -77,7 +77,7 @@ def show_go_screen():
     screen.blit(background, background_rect)
     draw_text(screen, 'Game over', 64, WIDTH / 2, HEIGHT / 4)
     draw_text(screen, 'Ваш счет:{}'.format(score), 40, 250, 250)
-    draw_text(screen, 'Нажмите любую клавишу для нвозвращения в главное меню', 20, WIDTH / 2, 400)
+    draw_text(screen, 'Нажмите любую клавишу для возвращения в главное меню', 20, WIDTH / 2, 400)
     display.flip()
     waiting = True
     while waiting:
