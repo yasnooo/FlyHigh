@@ -7,12 +7,14 @@ images = path.join(path.dirname(__file__), 'image')
 WIDTH = 478
 HEIGHT = 600
 FPS = 60
+POWERUP_TIME = 5000
 
 init()
 screen = display.set_mode((WIDTH, HEIGHT))
 display.set_caption('Fly High')
 clock = time.Clock()
 
+font1 = font.SysFont('britannic bold', 50)
 font_name = font.match_font('britannic bold')
 
 
@@ -48,6 +50,71 @@ def draw_shield_bar(surf, x, y, pct):
     draw.rect(surf, (0, 255, 0), fill_rect)
     draw.rect(surf, (0, 0, 0), outline_rect, 2)
 
+def show_go_screen1():
+    global running
+    screen.blit(background1, (-3, 0))
+    draw_text(screen, 'Удерживайте пробел для выстрелов', 30, WIDTH / 2, 237)
+    draw_text(screen, 'Нажимайте на стрелочки', 30, WIDTH / 2, 255)
+    draw_text(screen, 'для движения вправо или влево', 30, WIDTH / 2, 273)
+    draw_text(screen, 'Нажмите любую клавишу для начала игры', 20, WIDTH / 2, 400)
+    display.flip()
+    waiting = True
+    while waiting:
+        clock.tick(FPS)
+        for ev in event.get():
+            if ev.type == QUIT:
+                running = False
+                quit()
+                # running = False
+            if ev.type == KEYUP:
+                waiting = False
+
+def show_go_screen():
+    global running
+    global game_start
+    global score
+    screen.blit(background, background_rect)
+    draw_text(screen, 'Game over', 64, WIDTH / 2, HEIGHT / 4)
+    draw_text(screen, 'Ваш счет:{}'.format(score), 40, 250, 250)
+    draw_text(screen, 'Нажмите любую клавишу для нвозвращения в главное меню', 20, WIDTH / 2, 400)
+    display.flip()
+    waiting = True
+    while waiting:
+        clock.tick(FPS)
+        for ev in event.get():
+            if ev.type == QUIT:
+                quit()
+                running = False
+            if ev.type == KEYUP:
+                game_start = True
+                waiting = False
+
+
+class Menu:
+    def __init__(self):
+        self.surfaces = []
+        self.callbacks = []
+        self.current_index = 0
+
+    def append_option(self, option, callback):
+        self.surfaces.append(font1.render(option, True, '#FFE86E'))
+        self.callbacks.append(callback)
+
+    def switch(self, direction):
+        self.current_index = max(0, min(self.current_index + direction, len(self.surfaces) - 1))
+
+    def select(self):
+        self.callbacks[self.current_index]()
+
+    def draw(self, surf, x, y, padding):
+        for i, option in enumerate(self.surfaces):
+            rect_o = option.get_rect()
+            rect_o.topleft = (x + 70, y + 120 + i * 50)
+            if i == self.current_index:
+                draw.rect(surf, (239, 130, 13), (list(rect_o)[0], list(rect_o)[1] + 30, list(rect_o)[2], 10))
+            surf.blit(option, rect_o)
+
+
 
 class Player(sprite.Sprite):
     def __init__(self):
@@ -65,8 +132,14 @@ class Player(sprite.Sprite):
         self.lives = 3
         self.hidden = False
         self.hide_timer = time.get_ticks()
+        self.power = 1
+        self.power_time = time.get_ticks()
 
     def update(self):
+        if self.power >= 2 and time.get_ticks() - self.power_time > POWERUP_TIME:
+            self.power -= 1
+            self.power_time = time.get_ticks()
+
         if self.hidden and time.get_ticks() - self.hide_timer > 1000:
             self.hidden = False
             self.rect.centerx = WIDTH / 2
@@ -86,14 +159,28 @@ class Player(sprite.Sprite):
         if self.rect.left < 0:
             self.rect.left = 0
 
+    def powerup(self):
+        self.power += 1
+        self.power_time = time.get_ticks()
+
     def shoot(self):
         now = time.get_ticks()
 
         if now - self.last_shot > self.shoot_delay:
             self.last_shot = now
-            bullet = Bullet(self.rect.centerx, self.rect.top)
-            all_sprites.add(bullet)
-            bullets.add(bullet)
+
+            if self.power == 1:
+                bullet = Bullet(self.rect.centerx, self.rect.top)
+                all_sprites.add(bullet)
+                bullets.add(bullet)
+
+            if self.power >= 2:
+                bullet1 = Bullet(self.rect.left, self.rect.centery)
+                bullet2 = Bullet(self.rect.right, self.rect.centery)
+                all_sprites.add(bullet1)
+                all_sprites.add(bullet2)
+                bullets.add(bullet1)
+                bullets.add(bullet2)
 
     def hide(self):
         self.hidden = True
@@ -179,8 +266,30 @@ class Explosion(sprite.Sprite):
                 self.rect = self.image.get_rect()
                 self.rect.center = center
 
+class Pow(sprite.Sprite):
+    def __init__(self, center):
+        sprite.Sprite.__init__(self)
+        self.type = random.choice(['shield', 'gun'])
+        self.image = powerup_images[self.type]
+        self.image.set_colorkey((0, 0, 0))
+        self.rect = self.image.get_rect()
+        self.rect.center = center
+        self.speedy = 2
+
+    def update(self):
+        self.rect.y += self.speedy
+        if self.rect.top > HEIGHT:
+            self.kill()
+
 
 # Игровая графика
+background1 = image.load(path.join(images, 'main_menu1.bmp')).convert()
+background_rect1 = background1.get_rect()
+background = image.load(path.join(images, 'фон1.jpg')).convert()
+background_rect = background.get_rect()
+powerup_images = {}
+powerup_images['shield'] = image.load(path.join(images, 'shield_gold.png')).convert()
+powerup_images['gun'] = image.load(path.join(images, 'bolt_gold.png')).convert()
 player_img1 = image.load(path.join(images, 'Player3.jpg')).convert()
 bullet_img1 = image.load(path.join(images, 'laser1.png')).convert()
 player_mini_img = transform.scale(player_img1, (40, 30))
@@ -208,17 +317,52 @@ for i in range(9):
     img.set_colorkey((0, 0, 0))
     explosion_anim['player'].append(img)
 
+powerup_images = {}
+powerup_images['shield'] = image.load(path.join(images, 'shield_gold.png')).convert()
+powerup_images['gun'] = image.load(path.join(images, 'bolt_gold.png')).convert()
+
+
+powerups = sprite.Group()
+
 all_sprites = sprite.Group()
 bullets = sprite.Group()
 mobs = sprite.Group()
 player = Player()
 all_sprites.add(player)
-for i in range(10):
+for i in range(20):
     newmob()
 score = 0
 
+game_start = True
+game_over = False
 running = True
 while running:
+    if game_start:
+        show_go_screen1()
+        game_start = False
+        all_sprites = sprite.Group()
+        mobs = sprite.Group()
+        bullets = sprite.Group()
+        powerups = sprite.Group()
+        player = Player()
+        all_sprites.add(player)
+        for i in range(8):
+            newmob()
+        score = 0
+
+    if game_over:
+        show_go_screen()
+        game_over = False
+        all_sprites = sprite.Group()
+        mobs = sprite.Group()
+        bullets = sprite.Group()
+        powerups = sprite.Group()
+        player = Player()
+        all_sprites.add(player)
+        for i in range(8):
+            newmob()
+        score = 0
+
     clock.tick(FPS)
     for e in event.get():
         if e.type == QUIT:
@@ -234,6 +378,10 @@ while running:
         score += 50 - hit.radius
         ex = Explosion(hit.rect.center, 'lg')
         all_sprites.add(ex)
+        if random.random() > 0.9:
+            pow = Pow(hit.rect.center)
+            all_sprites.add(pow)
+            powerups.add(pow)
         newmob()
 
     hits = sprite.spritecollide(player, mobs, True, sprite.collide_circle)
@@ -249,8 +397,17 @@ while running:
             player.lives -= 1
             player.health = 100
 
+    hits = sprite.spritecollide(player, powerups, True)
+    for hit in hits:
+        if hit.type == 'shield':
+            player.health += random.randrange(10, 30)
+            if player.health >= 100:
+                player.health = 100
+        if hit.type == 'gun':
+            player.powerup()
+
     if player.lives == 0 and not death_explosion.alive():
-        running = False
+        game_over = True
 
     bg = image.load("image/фон1.jpg")
     screen.blit(bg, (-3, 0))
