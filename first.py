@@ -63,8 +63,9 @@ def show_go_screen1():
         clock.tick(FPS)
         for ev in event.get():
             if ev.type == QUIT:
+                waiting = False
                 running = False
-                quit()
+                # quit()
                 # running = False
             if ev.type == KEYUP:
                 waiting = False
@@ -83,7 +84,8 @@ def show_go_screen():
         clock.tick(FPS)
         for ev in event.get():
             if ev.type == QUIT:
-                quit()
+                waiting = False
+                # quit()
                 running = False
             if ev.type == KEYUP:
                 game_start = True
