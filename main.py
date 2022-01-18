@@ -84,7 +84,7 @@ def end_game():
     global running
     global game_start
     global score
-    screen.blit(background, background_rect)
+    screen.blit(background, r_back1)
     text_d(screen, 'Game over', 64, WIDTH / 2, HEIGHT / 4)
     text_d(screen, 'Ваш счет:{}'.format(score), 40, 250, 250)
     text_d(screen, 'Нажмите любую клавишу для возвращения в главное меню', 20, WIDTH / 2, 400)
@@ -307,12 +307,12 @@ class Improve(sprite.Sprite):
 
 # Игровая графика
 background1 = image.load(path.join(images, 'main_menu1.bmp')).convert()
-background_rect1 = background1.get_rect()
+r_back = background1.get_rect()
 background = image.load(path.join(images, 'фон1.jpg')).convert()
-background_rect = background.get_rect()
+r_back1 = background.get_rect()
 player_img1 = image.load(path.join(images, 'Player3.jpg')).convert()
 bullet_img1 = image.load(path.join(images, 'laser1.png')).convert()
-# маленькие корабли для отображения жизней
+# маленькие кораблики для отображения жизней
 mini_img = transform.scale(player_img1, (40, 30))
 mini_img.set_colorkey((0, 0, 0))
 power_rais_img = {}
