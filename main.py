@@ -162,9 +162,9 @@ class Player(sprite.Sprite):
         self.spdx = 0
         keystate = key.get_pressed()
         if keystate[K_LEFT]:
-            self.spdx = -8
+            self.spdx = -10
         if keystate[K_RIGHT]:
-            self.spdx = 8
+            self.spdx = 10
         if keystate[K_SPACE]:
             self.shoot()
         self.rect.x += self.spdx
@@ -209,15 +209,16 @@ class Mob(sprite.Sprite):
     # класс астероидов
     def __init__(self):
         sprite.Sprite.__init__(self)
-        self.image_orig = random.choice(asteroid_img)
-        self.image_orig.set_colorkey((0, 0, 0))
-        self.image = self.image_orig.copy()
+        self.original = random.choice(asteroid_img)
+        self.original.set_colorkey((0, 0, 0))
+        self.image = self.original.copy()
         self.rect = self.image.get_rect()
         self.radius = int(self.rect.width * .75 / 2)
+
         self.rect.x = random.randrange(WIDTH - self.rect.width)
         self.rect.y = random.randrange(-100, -40)
-        self.spdy = random.randrange(1, 20)
         self.spdx = random.randrange(-6, 6)
+        self.spdy = random.randrange(1, 20)
         self.rotation = 0
         self.rotation_spd = random.randrange(-7, 7)
         self.last_upd = time.get_ticks()
@@ -237,7 +238,7 @@ class Mob(sprite.Sprite):
         if now - self.last_upd > 50:
             self.last_upd = now
             self.rotation = (self.rotation + self.rotation_spd) % 360
-            new_img = transform.rotate(self.image_orig, self.rotation)
+            new_img = transform.rotate(self.original, self.rotation)
             old = self.rect.center
             self.image = new_img
             self.rect = self.image.get_rect()
@@ -329,8 +330,8 @@ animation['po'] = []
 animation['player'] = []
 
 for i in range(8):
-    filename = f'ordinary0{i}.png'
-    img = image.load(path.join(images, filename)).convert()
+    name_of_file = f'ordinary0{i}.png'
+    img = image.load(path.join(images, name_of_file)).convert()
     img.set_colorkey((0, 0, 0))
     img_lg = transform.scale(img, (75, 75))
     animation['po'].append(img_lg)
@@ -338,8 +339,8 @@ for i in range(8):
     animation['kl'].append(img_sm)
 
 for i in range(9):
-    filename = f'other0{i}.png'
-    img = image.load(path.join(images, filename)).convert()
+    name_of_file = f'other0{i}.png'
+    img = image.load(path.join(images, name_of_file)).convert()
     img.set_colorkey((0, 0, 0))
     animation['player'].append(img)
 
