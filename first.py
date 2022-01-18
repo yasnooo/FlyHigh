@@ -25,6 +25,7 @@ def draw_lives(surf, x, y, lives, img):
         img_rect.y = y
         surf.blit(img, img_rect)
 
+
 def draw_text(surf, text, size, x, y):
     font1 = font.Font(font_name, size)
     text_surface = font1.render(text, True, (255, 255, 255))
@@ -50,6 +51,7 @@ def draw_shield_bar(surf, x, y, pct):
     draw.rect(surf, (0, 255, 0), fill_rect)
     draw.rect(surf, (0, 0, 0), outline_rect, 2)
 
+
 def show_go_screen1():
     global running
     screen.blit(background1, (-3, 0))
@@ -69,6 +71,7 @@ def show_go_screen1():
                 # running = False
             if ev.type == KEYUP:
                 waiting = False
+
 
 def show_go_screen():
     global running
@@ -115,7 +118,6 @@ class Menu:
             if i == self.current_index:
                 draw.rect(surf, (239, 130, 13), (list(rect_o)[0], list(rect_o)[1] + 30, list(rect_o)[2], 10))
             surf.blit(option, rect_o)
-
 
 
 class Player(sprite.Sprite):
@@ -267,6 +269,7 @@ class Explosion(sprite.Sprite):
                 self.image = explosion_anim[self.size][self.frame]
                 self.rect = self.image.get_rect()
                 self.rect.center = center
+
 
 class Pow(sprite.Sprite):
     def __init__(self, center):
