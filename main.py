@@ -213,13 +213,13 @@ class Mob(sprite.Sprite):
         self.image_orig.set_colorkey((0, 0, 0))
         self.image = self.image_orig.copy()
         self.rect = self.image.get_rect()
-        self.radius = int(self.rect.width * .85 / 2)
+        self.radius = int(self.rect.width * .75 / 2)
         self.rect.x = random.randrange(WIDTH - self.rect.width)
         self.rect.y = random.randrange(-100, -40)
-        self.spdy = random.randrange(1, 8)
-        self.spdx = random.randrange(-3, 3)
+        self.spdy = random.randrange(1, 20)
+        self.spdx = random.randrange(-6, 6)
         self.rotation = 0
-        self.rotation_spd = random.randrange(-8, 8)
+        self.rotation_spd = random.randrange(-7, 7)
         self.last_upd = time.get_ticks()
 
     def update(self):
